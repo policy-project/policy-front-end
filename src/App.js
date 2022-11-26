@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import { Loader } from './components/Loader';
 import { Policies } from './components/Policies';
 
+
 function App() {
   return (
     <Box className="App">
