@@ -19,6 +19,7 @@ export const Loader = () => {
           border: "1px dashed grey",
           backgroundColor: "#c7f9cc",
           display: "flex",
+          cursor: "pointer"
         }}
           onClick={()=>clickOpenModal(true)}
       >
