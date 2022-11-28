@@ -1,11 +1,13 @@
 import { Box } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
 import React, { useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { controller } from "../common/config";
-import { POLICY_INSURED } from "../common/constants";
+import { POLICY_INSURED, POLICY_MAIN } from "../common/constants";
 import { setPolicy } from "../redux/slice";
 import { policySelector } from "../redux/store";
+import { Delete } from "@mui/icons-material"
+
 
 export const Policies = () => {
   const policies = useSelector(policySelector);
@@ -26,7 +28,25 @@ export const Policies = () => {
     { field: "insuredId", headerName: "insuredId", width: 150 },
     { field: "insuredFirstName", headerName: "insuredFirstName", width: 150 },
     { field: "insuredLastName", headerName: "insuredLastName", width: 150 },
+    {
+        field: 'actions', type: 'actions', 
+        getActions: (params) => {
+          const adminAct = [
+            <GridActionsCellItem
+              icon={<Delete />}
+              label="Delete"
+              onClick={() => onRemove(params.id)}
+            />
+          ];
+          return adminAct;
+        }
+      }
   ];
+
+  const onRemove = async (id) => {
+    await controller.delete(POLICY_MAIN + `/${id}`);
+    getPolicies();
+  }
 
   return (
     <Box sx={{ height: "50vh", width: "70vw", margin: "0 auto" }}>

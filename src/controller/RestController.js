@@ -21,6 +21,12 @@ export default class RestController{
         })
     }
 
+    delete(subUrl){
+        return this.fetch(subUrl, {
+            method: "DELETE"
+        })
+    }
+
 
      async fetch(suburl, option){
         console.log(this.url+suburl);
