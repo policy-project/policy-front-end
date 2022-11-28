@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "@mui/material/Modal";
-import { Box, Button, Typography } from "@mui/material";
+import { Alert, Box, Button, Typography } from "@mui/material";
 import Papa from "papaparse";
 import { useDispatch, useSelector } from 'react-redux';
 import { setPolicy } from "../redux/slice";
@@ -18,6 +18,7 @@ import {
   PRODUCT_MIN_ID,
 } from "../common/constants";
 import { controller } from "../common/config";
+import { positions } from "@mui/system";
 
 
 const style = {
@@ -48,6 +49,7 @@ const options = {
 export const ModalLoader = ({ open, onClose }) => {
   const [file, setFile] = useState();
   const [fileName, setFileName] = useState("Upload");
+  const [message, setMessage] = useState("");
   const policiesRef = useRef({ policy: [], insureds: [] });
   const dispatch = useDispatch();
 
@@ -57,19 +59,18 @@ export const ModalLoader = ({ open, onClose }) => {
     reader.onload = async ({ target }) => {
       const csv = Papa.parse(target.result, { header: true });
       const res = parseData(csv?.data);
+      console.log('res',res);
       if (res.state) {
         setFileName(file.name);
-        console.log('request data ',policiesRef.current);
       } else {
-        console.log('error data ', file.name);
-        alert(`error parse file ${file.name}`)
+        alert(`error parse file ${file.name}`);
         setFileName("Upload");
         setFile(undefined);
 
       }
       if (res.wrong.length !== 0){
-        const message = JSON.stringify(res.wrong);
-        alert(`error parse csv elements ${message}`);
+        const errorMessage = JSON.stringify(res.wrong[0]);
+        setMessage(errorMessage);
       }
     };
     if (file !== undefined) {
@@ -81,33 +82,19 @@ export const ModalLoader = ({ open, onClose }) => {
     const res = {"state":false,"wrong":[]};
     const arr = data.slice(0, -1);
     arr.forEach((e) => {
-      if (
-        (e.policyNumber !== undefined &&
-          e.policyNumber >= POLICY_MIN_ID &&
-          e.policyNumber < POLICY_MAX_ID) &&
-        (e.productNumber !== undefined &&
-          e.productNumber >= PRODUCT_MIN_ID &&
-          e.productNumber < PRODUCT_MAX_ID) &&
-        (e.insuredId !== undefined &&
-          e.insuredId >= INSURED_MIN_ID &&
-          e.insuredId < INSURED_MAX_ID) &&
-        (e.insuredFirstName !== undefined && e.insuredFirstName !== "") &&
-        (e.insuredLastName !== undefined && e.insuredLastName !== "")
-      ) {
+      const valid = validation(e);
+      if (valid == "") {
         policiesRef.current.policy.push({"policyNumber":e.policyNumber, "productNumber":e.productNumber,"insuredId":e.insuredId});
         policiesRef.current.insureds.push({"insuredId":e.insuredId, "insuredFirstName":e.insuredFirstName,"insuredLastName":e.insuredLastName});
         res.state = true;
       } else {
-        res.wrong = [{...e}, ...res.wrong];
+        res.wrong = [valid, ...res.wrong];
       }
     });
-
     return res;
   }
 
   const handleSubmit = async () => {
-    console.log('submit ', policiesRef.current);
-
     try {
       await controller.post(INSURED_ADD_ALL, policiesRef.current.insureds);
       await controller.post(POLICY_ADD_ALL, policiesRef.current.policy);
@@ -127,7 +114,6 @@ export const ModalLoader = ({ open, onClose }) => {
     const loadFile = await fileHandle.getFile();
     setFile(loadFile);
   };
-
   return (
     <Modal
       open={open}
@@ -136,6 +122,7 @@ export const ModalLoader = ({ open, onClose }) => {
       aria-describedby="modal-modal-description"
     >
       <Box sx={style}>
+       
         <Typography id="modal-modal-title" variant="h6" component="h2">
           Load data from csv
         </Typography>
@@ -150,7 +137,20 @@ export const ModalLoader = ({ open, onClose }) => {
         >
           submit
         </Button>
+        <Box sx={{mt:'20px'}}>
+            {message != "" && <Alert severity="error" onClose={() => {setMessage("")}}>{message}</Alert> } 
+        </Box>
       </Box>
     </Modal>
   );
 };
+
+function validation(elem){
+  let res = "";
+  res += (elem.policyNumber !== undefined && elem.policyNumber >= POLICY_MIN_ID && elem.policyNumber < POLICY_MAX_ID) ? "" : `wrong policy ${elem.policyNumber} policyNumber should be more ${POLICY_MIN_ID} and less ${POLICY_MAX_ID}. `;
+  res += (elem.productNumber !== undefined && elem.productNumber >= PRODUCT_MIN_ID && elem.productNumber < PRODUCT_MAX_ID) ? "" : `wrong policy ${elem.policyNumber} productNumber should be more ${PRODUCT_MIN_ID} and less ${PRODUCT_MAX_ID}. `;
+  res += (elem.insuredId !== undefined && elem.insuredId >= INSURED_MIN_ID && elem.insuredId < INSURED_MAX_ID) ? "" : `wrong ${elem.policyNumber} insuredId should be more ${INSURED_MIN_ID} and less ${INSURED_MAX_ID}. `;
+  res += (elem.insuredFirstName !== undefined && elem.insuredFirstName !== "") ? "" : `wrong policy ${elem.policyNumber} insuredFirstName shouldn't be empty. `;
+  res += (elem.insuredLastName !== undefined && elem.insuredLastName !== "") ? "" : `wrong policy ${elem.policyNumber} insuredLastName shouldn't be empty. `;
+  return res;
+}

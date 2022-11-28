@@ -1,18 +1,18 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { policies } from '../common/config';
+import { controller, policies } from '../common/config';
+import { POLICY_INSURED } from '../common/constants';
 
 export const policyDialogSlice = createSlice({
     name: 'policy',
     initialState: policies,
     reducers: {
-        setPolicy: (policy, param)  => {
-            console.log('set policy ', policy, param.payload);
-            policy = param.payload;
-            return policy;
+        setPolicy: (state, param)  => {
+            const {payload} = param;
+            return payload;
         }
     },
 })
 
 // Action creators are generated for each case reducer function
-export const {setPolicy} = policyDialogSlice.actions;
+export const {setPolicy, getPolicy} = policyDialogSlice.actions;
 export const policyStoreReducer = policyDialogSlice.reducer;
